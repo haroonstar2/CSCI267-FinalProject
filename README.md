@@ -6,12 +6,13 @@ A controlled PyTorch comparison of **Mini-AlphaZero** (2D Residual CNN) and **Mi
 
 ## Overview
 
-Deep reinforcement learning agents like AlphaZero model chess positions as uniform 2D spatial grids, requiring deep stacks of local 3x3 convolutions to propagate information across long-range sliding lines and non-local knight jumps. **AlphaGateau** (Rigaux & Kashima, NeurIPS 2024) addresses this bottleneck by representing the board as a directed move graph G(V, E): squares as nodes and geometrically valid moves as directed edges—and jointly updating node and edge features using GATEAU (Graph Attention with Edge-feature AUgmentation) layers.
+Deep reinforcement learning agents like AlphaZero model chess positions as uniform 2D spatial grids, requiring deep stacks of local 3x3 convolutions to propagate information across long-range sliding lines and non-local knight jumps. **AlphaGateau** (Rigaux & Kashima, NeurIPS 2024) addresses this bottleneck by representing the board as a directed move graph G(V, E): squares as nodes and geometrically valid moves as directed edges—and jointly updating node and edge features using GATEAU (Graph Attention
+neTwork with Edge features from Attention weight Updates) layers.
 
-This repository isolates the **2D grid vs. move-graph inductive bias** under a tightly controlled compute and parameter budget:
+This repository isolates the 2D grid vs. move-graph inductive bias under a tightly controlled compute and parameter budget:
 
 - **Identical Game Environment:** Custom lightweight 5x5 Gardner Mini-Chess engine (`25` board squares, `468` precomputed directed move edges).
-- **Matched Capacity:** Both architectures use `4` residual blocks and nearly identical trainable parameter counts 694k parameters.
+- **Matched Capacity:** Both architectures use 4 residual blocks and nearly identical trainable parameter counts 694k parameters.
 - **Shared Action Space & Search:** Both models output logits over the exact same `468` move edges and use identical standard PUCT MCTS so performance differences strictly reflect network representation rather than search-algorithm changes.
 
 ---
@@ -51,15 +52,6 @@ Standard library modules used: `math`, `random`, `time`, `collections`, and `typ
 
 - Single Google Colab NVIDIA T4 GPU.
 - The notebook automatically detects CUDA. Running the full 25-iteration experiment on CPU is possible but will be significantly slower.
-
-### Local Installation
-
-If running locally instead of Google Colab:
-
-```bash
-pip install torch numpy matplotlib jupyter
-jupyter notebook project.ipynb
-```
 
 ---
 
@@ -109,15 +101,15 @@ jupyter notebook project.ipynb
 
 ---
 
-## How to Run (Reproducing Reported Results)
+## How to Run
 
 Open `project.ipynb` in Google Colab (select **Runtime -> Change runtime type -> T4 GPU**) or a local CUDA-enabled Jupyter environment, and run the cells sequentially.
 
 ### 1. Initialize Environment, Graph, and Models
 
-Run Cells 1–7 to:
+Run the first few cells to:
 
-1. Import dependencies and configure `device` (`cuda`).
+1. Import dependencies and configure `device`.
 2. Precompute the 5x5 move graph (`25` nodes, `468` edges).
 3. Define `GardnerChess`, `encode_state`, `MiniAlphaZero`, `MiniAlphaGateau`, and the PUCT MCTS self-play routines.
 4. Instantiate parameter-matched models and verify counts:
@@ -129,7 +121,7 @@ ag_model = MiniAlphaGateau(hidden_dim=117, num_blocks=4).to(device)   # 693,344 
 
 ### 2. Quick Sanity Check
 
-Cell 9 runs a fast 3-iteration verification (~3 minutes total on a T4 GPU):
+A fast 3-iteration verification is computed (~3 minutes total on a T4 GPU):
 
 ```python
 az_metrics = train_model(az_model, "MiniAlphaZero", num_iters=3, games_per_iter=4, num_simulations=16)
@@ -139,7 +131,7 @@ show_results(az_metrics, ag_metrics, "Quick Test with num_iters=3, games_per_ite
 
 ### 3. Run the Main Training Loop (25 Iterations)
 
-Run Cell 10 (~63 min for `MiniAlphaZero`, ~134 min for `MiniAlphaGateau` on a T4 GPU). This logs per-iteration losses/timings, saves periodic checkpoints (`iter5` through `iter25` and `final`), and plots Total Loss vs. Iteration and Total Loss vs. Wall-Clock Time:
+The main experiment runs after the quick test (~63 min for `MiniAlphaZero`, ~134 min for `MiniAlphaGateau` on a T4 GPU). This logs per-iteration losses/timings, saves periodic checkpoints (`iter5` through `iter25` and `final`), and plots Total Loss vs. Iteration and Total Loss vs. Wall-Clock Time:
 
 ```python
 az_metrics = train_model(az_model, "MiniAlphaZero", num_iters=25, games_per_iter=16, num_simulations=32)
@@ -150,9 +142,9 @@ show_results(az_metrics, ag_metrics, "Main Experiment with num_iters=25, games_p
 
 ### 4. Run Head-to-Head Evaluations
 
-All evaluation matches use greedy PUCT MCTS (`num_simulations=16`, `add_dirichlet_noise=False`) over 100 games with balanced color assignments.
+All evaluation matches use greedy PUCT MCTS over 100 games with balanced color assignments.
 
-**A. Deterministic Starting Position Match (Cell 11 — Illustrates Repetition Artifact):**
+**A. Deterministic Starting Position Match:**
 
 ```python
 w, d, l = play_match(
